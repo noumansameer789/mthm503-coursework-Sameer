@@ -80,7 +80,7 @@ The simplest classifiers we could apply are Linear and Quadratic Discriminant an
 ```{python}
 #| echo: false
 #| results: 'asis'
-df = pd.read_csv('../../data_cache/vignettes/supervised_classification/lda.csv')
+df = pd.read_csv('lda.csv')
 df.rename(columns={"Unnamed: 0": "Category"}, inplace=True)
 print(df.round(3).to_markdown(index=False))
 ```
@@ -90,7 +90,7 @@ print(df.round(3).to_markdown(index=False))
 ```{python}
 #| echo: false
 #| results: 'asis'
-df = pd.read_csv('../../data_cache/vignettes/supervised_classification/qda.csv')
+df = pd.read_csv('qda.csv')
 df.rename(columns={"Unnamed: 0": "Category"}, inplace=True)
 print(df.round(3).to_markdown(index=False))
 ```
