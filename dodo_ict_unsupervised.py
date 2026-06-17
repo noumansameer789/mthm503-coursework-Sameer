@@ -77,8 +77,8 @@ def task_plot_scatterplot():
 
 def task_render_quarto():
     return {
-        'file_dep': ['vignettes/unsupervised/ict_unsupervised.qmd'],
-        'targets': ['vignettes/unsupervised/ict_unsupervised.html'],
-        'actions': ['quarto render vignettes/unsupervised/ict_unsupervised.qmd'],
+        'file_dep': ['vignettes/unsupervised/unsupervised_classification.qmd'],
+        'targets': ['vignettes/unsupervised/unsupervised_classification.html'],
+        'actions': ['quarto render vignettes/unsupervised/unsupervised_classification.qmd'],
         'clean': True,
     }
