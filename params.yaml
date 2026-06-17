@@ -1,0 +1,11 @@
+powershell -Command "@'
+mode: cw
+
+active:
+  unsupervised_title: ""Final Coursework Project""
+  supervised_title: ""Final Coursework Project""
+  regression_title: ""Final Coursework Project""
+  supervised_target_variable: ""passenger_injured""
+  regression_formula: ""co2_emissions_current ~ total_floor_area""
+  regression_group: ""built_form""
+'@ | Set-Content -Encoding UTF8 params.yaml"
