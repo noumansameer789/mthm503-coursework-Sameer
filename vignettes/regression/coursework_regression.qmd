@@ -1,59 +1,56 @@
 ---
-title: "Understanding costs"
+title: "Understanding Carbon Emissions Across Local Authorities"
 author: "Anonymous"
-format: 
+format:
   html:
     embed-resources: true
     math: mathjax
-
 ---
-
-
-
-## Your task
-
-This material is provided as context to the problem. You should rewrite it as you see fit.
 
 ## The Problem
 
-Data on [Energy Certificates](https://epc.opendatacommunities.org/) were downloaded in March 2025. These certificates are a non-random sample of UK housing, and contain information such as:
+Data on [Energy Certificates](https://epc.opendatacommunities.org/) were downloaded in March 2025. These certificates are a non-random sample of UK housing and contain information such as:
 
-- Property energy efficiency: The core data is the energy efficiency rating, which ranges from A (most efficient) to G (least efficient).
-- CO2 emissions: The data includes information on the building's likely carbon dioxide emissions.
-- Energy costs: Potential costs for heating and lighting the property are provided.
-- Improvement recommendations: Each EPC lists cost-effective ways to improve the building's energy performance.
+* **Property energy efficiency**: the core energy efficiency rating, ranging from A, the most efficient, to G, the least efficient.
+* **CO2 emissions**: estimates of the building's likely carbon dioxide emissions.
+* **Energy costs**: estimated costs for heating, lighting and hot water.
+* **Improvement recommendations**: suggested cost-effective measures to improve building energy performance.
 
-We have been asked by a local company to determine whether some local authorities are better than others in terms of reducing the carbon footprint of properties in their area.  However, some authorities have older housing stock which is innately has a larger carbon footprint. Likewise, some have larger properties than others.  The initial brief is to carry out an aggregate data analysis where the unit of analysis is a local authority.  We have been asked to consider the average carbon footprint of a house in a given area conditional on being pre- or post-1930 and having between 1 and 10 heated rooms.  This should let you fit a model which has fixed effects for the number of houses of pre-1930, post-1930 and 1, 2, 3, ..., 10 heated rooms
+The aim of this report is to assess whether some local authorities appear to perform better than others in terms of the carbon footprint of properties in their area. A direct comparison of average emissions between authorities would be misleading, because local authorities differ in the composition of their housing stock. Some areas contain more older properties, and older housing is often less energy efficient. Similarly, some authorities contain larger homes, which naturally require more energy for heating.
 
+For this reason, the analysis uses an aggregate model that adjusts for property characteristics before comparing local authorities. The unit of analysis is a local-authority/property-type combination. The response is the average carbon dioxide emissions for properties in a given authority and housing category. The model adjusts for property age and number of heated rooms, while allowing for residual differences between local authorities.
+
+The mixed-effects model can be written as:
 
 $$Y_{ji} = \beta_0 + \beta_1 x_{j}^{(\text{old})} + \sum_{r=1}^{10} \beta_r x_{j}^{(r)} + \gamma_j$$
 
-Where 
+where:
 
-- $Y_{ji}$ is the average carbon dioxide emissions for authority $j$ for each house type $i$ (old/new, 1, 2, ..., 10 rooms)
-- $x_{j}^{(old)}$ is the number of houses that are older than 1930 in authority $j$
-- $x_{j}^r$ are the number of houses with $r=1, 2, ..., 10$ rooms in authority $j$ 
-- $\beta_0$, $\beta_1$, $\beta_r$ are the fixed effects
-- $\gamma_j$ is the random effect for local authority $j$
+* $Y_{ji}$ is the average carbon dioxide emissions for authority $j$ and house type $i$.
+* $x_{j}^{(\text{old})}$ represents the age composition of housing stock in authority $j$.
+* $x_{j}^{(r)}$ represents the number or composition of properties with $r = 1, 2, \ldots, 10$ heated rooms in authority $j$.
+* $\beta_0$, $\beta_1$ and $\beta_r$ are fixed effects.
+* $\gamma_j$ is the random effect for local authority $j$.
 
-
-
+The fixed effects estimate systematic relationships between property characteristics and emissions. The random effect is intended to capture remaining authority-level variation after adjusting for these characteristics.
 
 ## The Data
 
-Some initial exploratory data analysis shows us how the carbon emissions vary by age of property and by the number of rooms:
-
-
+The first stage of the analysis is exploratory. The figures below show how carbon emissions vary by age of property and by number of heated rooms.
 
 ![](../../data_cache/vignettes/regression/boxplot_age.html){width="100%" height="600px"}
 
+*Figure 1. Distribution of carbon emissions by property age category.*
+
 ![](../../data_cache/vignettes/regression/boxplot_rooms.html){width="100%" height="600px"}
 
+*Figure 2. Distribution of carbon emissions by number of heated rooms.*
 
-## The model
+The exploratory plots are important because they show why adjustment is needed before comparing authorities. Older properties generally have higher emissions than more recent properties, while properties with more heated rooms tend to have higher emissions than smaller properties. These patterns are plausible because older buildings often have lower insulation standards and larger properties require more energy for heating. Therefore, local authorities with older or larger housing stock may appear worse in a simple comparison even if their underlying performance is not poor.
 
-A model can be fitted and a summary of the fixed effects produced
+## The Model
 
+A mixed-effects regression model is fitted to estimate the relationship between property characteristics and carbon emissions while allowing for local-authority-level variation.
 
 ```{python}
 #| echo: false
@@ -64,31 +61,66 @@ with open('../../data_cache/vignettes/regression/model_fit.txt') as f:
     print(content)
 ```
 
+*Table 1. Mixed-effects regression model summary.*
 
-## The key insight
+The model output provides the estimated fixed effects and the estimated random-effect variance. The fixed-effect terms describe the average relationship between the explanatory variables and emissions across the whole dataset. In the fitted model, the property-age effect indicates that more recent properties have lower emissions than older properties after adjustment for the number of rooms. This is consistent with the expectation that newer properties are more energy efficient and are more likely to benefit from modern building standards, insulation and heating systems.
 
-We've been asked to rate local authority performance, so the most important result is a ``caterpillar plot'' of the random effects.
+The number-of-rooms effect is positive, meaning that properties with more heated rooms tend to have higher emissions. This is also expected because larger homes usually require more energy to heat. The result confirms that comparisons between local authorities should adjust for housing size; otherwise, authorities with larger average property sizes could be unfairly judged as having worse carbon performance.
 
+The key statistical point is that the model attempts to separate property-composition effects from authority-level effects. This is useful because it allows local authorities to be compared more fairly than a simple unadjusted average emissions comparison would allow.
+
+## Local-Authority Effects
+
+The most important output for comparing local authorities is the caterpillar plot of random effects.
 
 ![](../../data_cache/vignettes/regression/caterpillar.html){width="100%" height="600px"}
 
-##  Additional credit
+*Figure 3. Caterpillar plot of estimated local-authority random effects.*
 
-For additional credit you might like to enhance the exploratory data analysis. You could consider residual diagnostics to check the validity of the model fit. You may also like to consider the appropriateness of the adjusting variables age and number of rooms. You could consider extracting further variables from the database and fitting a slightly more elaborate model.
+The caterpillar plot ranks local authorities according to their estimated residual effect after adjusting for property age and number of rooms. Authorities with positive random effects have higher estimated emissions than expected given their housing-stock composition, while authorities with negative random effects have lower estimated emissions than expected. In principle, this makes the plot useful for identifying authorities that may be performing better or worse than expected.
 
+However, the random effects must be interpreted cautiously. The model output indicates that the group variance is close to zero, and the fitting process may produce a singular random-effects covariance warning. This suggests that, after adjusting for property age and number of rooms, there may be limited remaining authority-level variation for the model to estimate. It may also indicate that the random-effects structure is weakly identified by the data.
 
-## Record of AI use for MTHM503 Regression coursework
+For this reason, the fixed-effect relationships should be interpreted more confidently than the ranking of individual authorities. The caterpillar plot is useful as an exploratory diagnostic, but it should not be treated as a definitive performance league table without further model checking and sensitivity analysis.
 
-Instructions: You can use this document to record when, how and why you used GenAI to complete your assessment. It will help you create a record of AI use to submit alongside your references for AI-integrated and AI-assisted assignments. It may also be useful to help you discuss your AI use if you are required to do so in an academic conduct meeting.
+## Interpretation and Practical Implications
 
-| **Date**       | **AI tool used** | **Purpose**                                | **Prompt**                                 | **Hyperlink to output (where possible)** | **Section of work used for** |
-|----------------|------------------|--------------------------------------------|--------------------------------------------|------------------------------------------|-------------------------------|
-| E.g. 15/07/2025| MS Copilot       | To help create an organised essay structure| ‘Generate ideas for structuring an essay on...’ | [insert link]                          | introduction                  |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
+The results suggest that property characteristics are important drivers of carbon emissions. Age and size both have clear practical relevance: older homes and larger homes are generally associated with higher emissions. This means that local authorities should not be compared using raw average emissions alone. A local authority with a large stock of older or larger housing may have higher emissions because of structural housing-stock differences rather than because of weaker environmental performance.
+
+The mixed-effects approach provides a more appropriate framework because it adjusts for key housing-stock characteristics before estimating authority-level differences. This is valuable for policy and business decision-making. For example, a local company or local authority could use the model to identify whether high emissions are mainly explained by property composition or whether an area still appears unusual after adjustment.
+
+At the same time, the near-zero random-effect variance limits the strength of the authority-level conclusions. The analysis gives stronger evidence about the role of property characteristics than about large residual differences between local authorities. Therefore, the model is best viewed as an adjustment and diagnostic tool, not as a final ranking system.
+
+## Limitations
+
+There are several limitations to this analysis. First, EPC data are not a random sample of all housing. Certificates are more likely to be generated when properties are sold, rented or retrofitted, so the dataset may not fully represent the entire housing stock.
+
+Second, the analysis is based on aggregate local-authority/property-type summaries. This may introduce ecological bias because relationships observed at an aggregate level may not exactly match relationships at the individual-property level.
+
+Third, the model adjusts only for selected characteristics such as age and number of rooms. Other important factors may also influence emissions, including floor area, building type, insulation, heating fuel, heating system, tenure, occupancy patterns and retrofit history. Excluding these variables may leave residual confounding.
+
+Fourth, the random-effect variance is close to zero, which means the local-authority ranking should be interpreted cautiously. The caterpillar plot may give an impression of authority differences, but the model does not provide strong evidence of large remaining authority-level variation after adjustment.
+
+Finally, the model relies on estimated EPC emissions rather than directly measured energy use. EPC measures are useful for standardised comparison, but they may not fully capture real household energy consumption.
+
+## Extension
+
+A useful extension would be to include additional explanatory variables, such as total floor area, property type, heating system, insulation measures or main fuel type. These variables could improve the model by capturing more of the structural differences between properties and authorities.
+
+Another extension would be to perform residual diagnostics. Residual plots could be used to assess whether the model assumptions are reasonable, including approximate linearity, constant variance and the presence of outliers. Comparing the mixed-effects model with a simpler fixed-effects model would also help assess whether the random authority effect adds meaningful explanatory value.
+
+A further extension would be to fit alternative model specifications, such as models with interactions between property age and number of rooms. This could test whether the effect of property size differs between older and newer housing stock.
+
+## Conclusion
+
+This report used a mixed-effects regression model to analyse carbon emissions across local authorities while adjusting for differences in housing-stock composition. The results show that property age and size are important predictors of emissions: more recent properties are associated with lower emissions, while properties with more heated rooms are associated with higher emissions.
+
+The model provides a more statistically fair basis for comparing local authorities than raw average emissions, because it accounts for key structural differences in the housing stock. However, the near-zero random-effect variance means that authority-level differences should be interpreted cautiously. The evidence is stronger for the role of property characteristics than for a definitive ranking of local-authority performance.
+
+Overall, the analysis is useful as an exploratory and adjustment-based tool. It shows why carbon-emission comparisons need to account for housing-stock composition and provides a foundation for more detailed modelling using additional property-level and authority-level predictors.
+
+## Record of AI Use for MTHM503 Regression Coursework
+
+| **Date**   | **AI tool used** | **Purpose**                                                                                                                             | **Prompt**                                                                                              | **Hyperlink to output where possible** | **Section of work used for**                                             |
+| ---------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------ |
+| 17/06/2026 | ChatGPT / Claude | Strict review of report quality and support drafting interpretation, limitations and conclusion wording, checked against my own outputs | "Review my MTHM503 regression report and suggest interpretation, limitations and conclusion paragraphs" | n/a                                    | Model interpretation, Random effects, Limitations, Extension, Conclusion |

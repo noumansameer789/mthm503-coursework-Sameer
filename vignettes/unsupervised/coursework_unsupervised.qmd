@@ -1,125 +1,114 @@
 ---
-title: "Clustering local authorities by road collision patterns"
+title: "Clustering Local Authorities by Road Collision Patterns"
 author: "Anonymous"
-format: 
+format:
   html:
     embed-resources: true
-
 ---
-
-## Your task
-
-This material is provided as context to the problem. You should rewrite it as you see fit.  IN particular, you should demonstrate you understand why we are undertaking a cluster analysis, and what the various methods are telling us.  In particular, you should explain how principal components helps us visualise the results of the clustering.
-
 
 ## The Problem
 
-Police recorded data in Great Britain is called "Stats19" and is available at <https://www.data.gov.uk/dataset/cb7ae6f0-4be6-4935-9277-47e5ce24a11f/road-accidents-safety-data>.  These data are typically split into three linked tables:
+Police-recorded road safety data in Great Britain are collected in the Stats19 dataset, available from the UK government open data portal: https://www.data.gov.uk/dataset/cb7ae6f0-4be6-4935-9277-47e5ce24a11f/road-accidents-safety-data. These data are typically split into three linked tables:
 
-- Accidents
+* **Accidents**: each row represents a single reported collision and includes information such as date, time, location, road type, weather, lighting conditions, number of vehicles and number of casualties.
+* **Vehicles**: each row represents a vehicle involved in a collision and includes information such as vehicle type, manoeuvre, vehicle age, driver age and driver sex.
+* **Casualties**: each row represents a person injured or killed and includes information such as casualty type, severity, age, sex and mode of transport.
 
-  Each row represents a single reported accident. Key fields include:
+These tables are linked by a unique accident index.
 
-  - Date and time
-  - Location (e.g. latitude/longitude, local authority)
-  - Road type and conditions
-  - Weather and lighting
-  - Number of vehicles and casualties
+The aim of this report is to group local authorities according to the types of collisions that occur in their areas. The variables available for clustering describe the number of collisions involving features such as mini-roundabouts, rain, darkness, dry road conditions, urban settings and collisions where the most seriously injured casualty was recorded as having a slight injury.
 
-- Vehicles
+This is an unsupervised learning task because there is no known target label defining the “type” of each local authority. Instead, clustering is used to identify whether authorities naturally form groups with similar collision profiles. Such groups can help local authorities compare themselves with similar areas and may support more targeted road-safety interventions.
 
-  Each row represents a vehicle involved in an accident. Includes:
+Previous applications of cluster analysis to traffic and collision data include:
 
-  - Vehicle type and age
-  - Manoeuvre and direction
-  - Driver age and sex
-
-- Casualties
-  
-  Each row represents a person injured or killed. Includes:
-
-  - Casualty type (pedestrian, cyclist, driver, etc.)
-  - Severity (slight, serious, fatal)
-  - Age, sex, and mode of transport
-
-These tables are linked via a unique accident index.
-
-
-We are interested in creating clusters of like authorities based on the kinds of collisions that occur in their area.  You have been given a count of the number of collisions at Mini-roundabout, in the Rain, in the Dark, when the road is Dry, in an urban setting and where the most seriously injured casualty was reported as having a slight injury.
-
-Some previous cluster analysis work has been reported at:
-
-- [ Cluster analysis](https://ijirt.org/publishedpaper/IJIRT175966_PAPER.pdf)
-- [More cluster analysis](https://www.researchgate.net/publication/357727987_Identification_of_Traffic_Accident_Patterns_via_Cluster_Analysis_and_Test_Scenario_Development_for_Autonomous_Vehicles/fulltext/61dcdc17034dda1b9eebd63d/Identification-of-Traffic-Accident-Patterns-via-Cluster-Analysis-and-Test-Scenario-Development-for-Autonomous-Vehicles.pdf)
-
+* [Cluster analysis of road accident data](https://ijirt.org/publishedpaper/IJIRT175966_PAPER.pdf)
+* [Identification of traffic accident patterns via cluster analysis](https://www.researchgate.net/publication/357727987_Identification_of_Traffic_Accident_Patterns_via_Cluster_Analysis_and_Test_Scenario_Development_for_Autonomous_Vehicles/fulltext/61dcdc17034dda1b9eebd63d/Identification-of-Traffic-Accident-Patterns-via-Cluster-Analysis-and-Test-Scenario-Development-for-Autonomous-Vehicles.pdf)
 
 ## The Data
 
-The first thing we can do is consider a scatterplot of the data
+The first exploratory step is to inspect the collision variables visually.
 
 ![](../../data_cache/vignettes/unsupervised_classification/scatterplot.html){width="100%" height="600px"}
 
-We are going to use the proportion of each subtype of collision that was reported, and rescale the variables.
+*Figure 1. Exploratory scatterplot of the local-authority collision variables.*
 
+The raw counts are not directly comparable across authorities because larger or busier authorities are likely to record more collisions overall. Therefore, the analysis uses the proportion of each collision subtype rather than the absolute count. This makes the clustering focus on the *profile* of collisions, not simply on the size of the authority or the total number of recorded incidents.
 
-## Hierarchical clustering
+The variables are also rescaled before clustering. This is important because distance-based methods such as hierarchical clustering and k-means are sensitive to variable scale. Without standardisation, variables with larger numerical ranges would dominate the distance calculations and could distort the resulting clusters.
 
+## Hierarchical Clustering
 
-The first task is to perform hierarchical clustering.
+Hierarchical clustering is first used to explore the similarity structure between local authorities. This method begins by treating each authority as its own cluster and then progressively merges authorities or groups of authorities according to their similarity.
 
 ![](../../data_cache/vignettes/unsupervised_classification/dendrogram.html){width="100%" height="600px"}
 
+*Figure 2. Hierarchical clustering dendrogram for local-authority collision profiles.*
 
-You need to select a suitable ``cut-point'' and cut the tree at an appropriate height to form a number of clusters.
+The dendrogram shows how local authorities are merged as the allowed within-cluster dissimilarity increases. A suitable cut point should be chosen where there is a noticeable increase in linkage distance, because this indicates that relatively distinct groups are being combined. Cutting the dendrogram too low would produce too many small clusters that may be difficult to interpret, while cutting it too high would merge authorities with meaningfully different collision patterns. A moderate cut point is therefore preferable because it balances interpretability with separation between groups.
 
-To aid visualisation of results, you should plot the cluster membership on a scatterplot of the first two principal components.
-
+To help visualise the clustering result, the cluster membership is plotted using the first two principal components.
 
 ![](../../data_cache/vignettes/unsupervised_classification/kscatter.html){width="100%" height="600px"}
 
+*Figure 3. Cluster membership visualised on the first two principal components.*
 
-## kmeans clustering
+Principal component analysis is useful here because the clustering is based on several collision variables, which cannot be easily visualised together in the original feature space. PCA projects the standardised variables onto two new axes that capture the largest directions of variation in the data. Authorities that appear close together in the PCA plot have similar collision profiles across the selected variables, while authorities further apart have more different profiles. However, the PCA plot should be interpreted as a visual summary rather than a complete representation of the clustering, because the first two components may not capture all variation in the original variables.
 
+## K-Means Clustering
 
-The second task is to perform k-means clustering. You should select an appropriate number of clusters.
-First, you should look at the cluster centroids:
+K-means clustering is used as a second clustering method. Unlike hierarchical clustering, k-means requires the number of clusters to be chosen in advance. The algorithm then assigns each authority to the nearest cluster centroid and updates the centroids iteratively until the allocation stabilises.
 
+The cluster centroids are useful because they describe the typical collision profile of each group.
 
 ![](../../data_cache/vignettes/unsupervised_classification/kcentroids1.html){width="100%" height="600px"}
 
+*Figure 4. K-means cluster centroids for the first set of collision-profile variables.*
 
 ![](../../data_cache/vignettes/unsupervised_classification/kcentroids2.html){width="100%" height="600px"}
 
+*Figure 5. K-means cluster centroids for the remaining collision-profile variables.*
 
-As before you should plot the cluster membership on a scatterplot of the first two principal components.
+The centroid plots allow the clusters to be interpreted substantively. For example, one cluster may be characterised by a higher proportion of urban collisions, another by a higher proportion of dark-condition or rain-related collisions, and another by a higher proportion of slight-injury collisions. This is useful because the clusters are not just mathematical groupings; they summarise different local-authority collision profiles that may require different policy responses.
+
+The k-means cluster memberships can again be visualised using the first two principal components.
 
 ![](../../data_cache/vignettes/unsupervised_classification/kscatter.html){width="100%" height="600px"}
 
+*Figure 6. K-means cluster membership visualised on the first two principal components.*
 
+Comparing the k-means solution with the hierarchical clustering result is important. If both approaches produce broadly similar groupings, this increases confidence that the clusters reflect genuine structure in the data rather than being an artefact of one specific algorithm. If the solutions differ substantially, this would suggest that the clustering is sensitive to methodological choices and should be interpreted more cautiously.
 
+## Interpretation and Practical Use
 
+The main value of this analysis is descriptive. It groups local authorities by similarity in collision circumstances, allowing road-safety teams to identify authorities with comparable patterns. This may help authorities benchmark against similar areas and design interventions that reflect their dominant collision profile. For example, an authority with a high share of dark-condition collisions may benefit from lighting-focused interventions, whereas one with a high share of urban collisions may require junction design, speed-management or pedestrian-safety measures.
 
-##  Additional credit
+However, the clusters should not be interpreted as causal explanations. Being in a cluster does not explain why an authority has a particular collision profile; it only indicates that the authority is similar to others on the selected variables. Causal interpretation would require additional contextual variables such as population, road length, traffic volume, urban/rural composition, public transport use, weather exposure and enforcement patterns.
 
-For additional credit you should consider adding a further unsupervised classification method. Alternatively, you could increase the number of variables used in the clustering.
+## Limitations
 
+There are several limitations to the analysis. First, the cluster solution depends on the selected variables. The current variables capture only a subset of collision circumstances, so the clusters may change if additional variables such as road class, speed limit, casualty type, vehicle type or traffic exposure are included.
 
+Second, clustering is sensitive to scaling, distance metrics and the chosen number of clusters. The hierarchical and k-means approaches provide useful complementary views, but neither gives a uniquely correct answer. Cluster membership should therefore be treated as an exploratory summary rather than a definitive classification of local authorities.
 
-## Record of AI use for MTHM503 unsupervised coursework
+Third, the PCA visualisation only shows the first two principal components. Although this helps with interpretation, it may hide variation contained in later components. Visual overlap in the PCA plot does not necessarily mean that the authorities are identical in the full multivariate space, and clear separation in the plot should not be overinterpreted without checking the underlying variables.
 
-Instructions: You can use this document to record when, how and why you used GenAI to complete your assessment. It will help you create a record of AI use to submit alongside your references for AI-integrated and AI-assisted assignments. It may also be useful to help you discuss your AI use if you are required to do so in an academic conduct meeting.
+Finally, the analysis uses proportions of recorded collision types. This improves comparability across authorities but does not adjust for exposure. An authority with a high proportion of one collision type may still have a low absolute risk if the total number of collisions is small. For policy use, the clustering should be combined with exposure-adjusted collision rates.
 
-| **Date**       | **AI tool used** | **Purpose**                                | **Prompt**                                 | **Hyperlink to output (where possible)** | **Section of work used for** |
-|----------------|------------------|--------------------------------------------|--------------------------------------------|------------------------------------------|-------------------------------|
-| E.g. 15/07/2025| MS Copilot       | To help create an organised essay structure| ‘Generate ideas for structuring an essay on...’ | [insert link]                          | introduction                  |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
+## Extension
 
+A useful extension would be to include a broader set of collision variables, such as road type, speed limit, vehicle involvement, casualty type and severity. This would provide a richer description of each authority's road-safety profile. Another extension would be to compare the current clustering methods with another unsupervised method, such as Gaussian mixture models, or to use silhouette scores to assess the separation of the chosen clusters.
 
+Further work could also link the cluster results to policy-relevant outcomes. For example, authorities in the same cluster could be compared in terms of intervention history, road infrastructure, traffic volume or casualty rates. This would help move the analysis from descriptive grouping toward more actionable road-safety planning.
 
+## Conclusion
+
+This report used hierarchical clustering, k-means clustering and PCA visualisation to group local authorities according to their road-collision profiles. The analysis shows how unsupervised learning can identify authorities with similar patterns of collision circumstances without relying on a predefined target label. Hierarchical clustering provides a useful overview of similarity structure, while k-means offers interpretable centroids that describe typical profiles for each group. PCA supports visual interpretation by projecting the multivariate collision data into two dimensions.
+
+The results should be used as an exploratory tool for comparison and prioritisation, not as a final causal explanation. With additional variables and exposure-adjusted measures, this type of clustering could support more targeted road-safety strategies by helping local authorities identify peers with similar collision characteristics and by highlighting the types of incidents most associated with each group.
+
+## Record of AI Use for MTHM503 Unsupervised Coursework
+
+| **Date**   | **AI tool used** | **Purpose**                                                                                                                             | **Prompt**                                                                                                | **Hyperlink to output where possible** | **Section of work used for**                       |
+| ---------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------- |
+| 17/06/2026 | ChatGPT / Claude | Strict review of report quality and support drafting interpretation, limitations and conclusion wording, checked against my own outputs | "Review my MTHM503 unsupervised report and suggest interpretation, limitations and conclusion paragraphs" | n/a                                    | Interpretation, Limitations, Extension, Conclusion |

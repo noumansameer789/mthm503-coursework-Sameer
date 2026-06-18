@@ -1,50 +1,41 @@
 ---
-title: "Building a classifier to predicting house age"
+title: "Building a Classifier to Predict House Age"
 author: "Anonymous"
-format: 
+format:
   html:
     embed-resources: true
-
 ---
-
-## Your task
-
-This material is provided as context to the problem. You should rewrite it as you see fit.
 
 ## The Problem
 
 Data on [Energy Certificates](https://epc.opendatacommunities.org/) were downloaded in March 2025. These certificates are a non-random sample of UK housing, and contain information such as:
 
-- Property energy efficiency: The core data is the energy efficiency rating, which ranges from A (most efficient) to G (least efficient).
-- CO2 emissions: The data includes information on the building's likely carbon dioxide emissions.
-- Energy costs: Potential costs for heating and lighting the property are provided.
-- Improvement recommendations: Each EPC lists cost-effective ways to improve the building's energy performance.
+* Property energy efficiency: The core data is the energy efficiency rating, which ranges from A (most efficient) to G (least efficient).
+* CO2 emissions: The data includes information on the building's likely carbon dioxide emissions.
+* Energy costs: Potential costs for heating and lighting the property are provided.
+* Improvement recommendations: Each EPC lists cost-effective ways to improve the building's energy performance.
 
-In all, there are 93 variables available on a wide range of metrics. The full dataset is in the course database server at `10.121.4.250` in `energy.energy_certificates`
+In all, there are 93 variables available on a wide range of metrics. The full dataset is in the course database server at `10.121.4.250` in `energy.energy_certificates`.
 
 The data have been used for various published supervised classification exercises:
 
-- ONS data science campus EPC data to predict energy efficiency ratings across Welsh properties. They applied models like XGBoost and found that features such as floor area, number of habitable rooms, and extension count were most predictive <https://datasciencecampus.ons.gov.uk/projects/using-machine-learning-to-predict-energy-efficiency/>
-- EPC anomaly detection (improve data quality) <https://www.iaarc.org/publications/fulltext/102_A_Comprehensive_Approach_for_Automated_Anomaly_Detection_and_Enhancement_of_EPC_Datasets_for_Decarbonization.pdf>
-- Identifying priorities for retrofit strategy <https://uwlpress.uwl.ac.uk/newvistas/article/id/299/>
-- EPC prediction <https://github.com/yourunclefrankie/Energy-efficiency-prediction>
+* ONS Data Science Campus used EPC data to predict energy efficiency ratings across Welsh properties. They applied models such as XGBoost and found that features such as floor area, number of habitable rooms, and extension count were most predictive: https://datasciencecampus.ons.gov.uk/projects/using-machine-learning-to-predict-energy-efficiency/
+* EPC anomaly detection for improving data quality: https://www.iaarc.org/publications/fulltext/102_A_Comprehensive_Approach_for_Automated_Anomaly_Detection_and_Enhancement_of_EPC_Datasets_for_Decarbonization.pdf
+* Identifying priorities for retrofit strategy: https://uwlpress.uwl.ac.uk/newvistas/article/id/299/
+* EPC prediction example: https://github.com/yourunclefrankie/Energy-efficiency-prediction
 
-In reducing the carbon footprint of UK housing, it is important to develop a strategy that offers the right solutions to the right properties. It is widely believed that houses build before 1930 require very different approaches to houses built after that period.  In this task, you are required to determine whether it is possible to determine the age of a house based on several recorded energy metrics. These are `current_energy_efficiency`, `environment_impact_current`, `energy_consumption_current`, `co2_emissions_current`, `lighting_cost_current`, `heating_cost_current`, `hot_water_cost_current`.  You have data for all certificates issued in a single local authority area.  This would help the local authority identify the right targets just using metrics rather than requiring a visit to the property to determine its age.
-
-
-
+In reducing the carbon footprint of UK housing, it is important to develop a strategy that offers the right solutions to the right properties. It is widely believed that houses built before 1930 require very different approaches from houses built afterwards. This report investigates whether a property's age band, pre- or post-1930, can be inferred from several recorded energy metrics alone: `current_energy_efficiency`, `environment_impact_current`, `energy_consumption_current`, `co2_emissions_current`, `lighting_cost_current`, `heating_cost_current`, and `hot_water_cost_current`. The analysis uses all certificates issued in a single local authority area. If sufficiently accurate, this would allow the authority to identify potential retrofit targets from recorded energy metrics, rather than requiring an initial property visit simply to determine age.
 
 ## The Data
 
-A very simple preview of the data is given below:
+We begin by summarising the two age groups, pre-1930 and post-1930.
 
 ```{python}
 #| echo: false
 import pandas as pd
 ```
 
-And a clumsy presentation of some group summary statistics:
-
+The first table reports the number of certificates in each group; the second gives summary statistics for each predictor, split by age band.
 
 ```{python}
 #| echo: false
@@ -53,8 +44,6 @@ df = pd.read_csv('../../data_cache/vignettes/supervised_classification/frequenci
 print(df.round(3).to_markdown(index=False))
 ```
 
-
-
 ```{python}
 #| echo: false
 #| results: 'asis'
@@ -62,20 +51,19 @@ df = pd.read_csv('../../data_cache/vignettes/supervised_classification/grouped_s
 print(df.round(3).to_markdown(index=False))
 ```
 
-It is always useful to view a scatterplot of the data, marking the two known groups
+*Table 1. Summary statistics for each predictor, by age band.*
 
+Before modelling, the group summaries already point to a separable signal. Pre-1930 properties have, on average, lower current energy efficiency, higher energy consumption, higher current CO2 emissions and substantially higher heating costs than post-1930 properties. This is consistent with older, less thermally efficient housing stock. The scatterplot below shows the two age bands; they overlap considerably but are not coincident, which makes classification feasible from energy metrics alone while also setting a realistic ceiling on model accuracy.
 
 ![](../../data_cache/vignettes/supervised_classification/scatterplot.html){width="100%" height="600px"}
 
+*Figure 1. Scatterplot of pre-1930 and post-1930 properties across the recorded energy metrics.*
 
+We now fit and evaluate two discriminant-analysis classifiers and extract their performance metrics.
 
-For more marks, you may wish to extend this EDA section slightly.  We can extract the performance metrics from fitting such models:
+## Fitting LDA and QDA Classifiers
 
-
-## Fitting LDA and QDA classifiers
-
-The simplest classifiers we could apply are Linear and Quadratic Discriminant analysis.
-
+The simplest classifiers we can apply are Linear Discriminant Analysis (LDA) and Quadratic Discriminant Analysis (QDA). LDA assumes that the two classes have a shared covariance structure and therefore estimates a linear decision boundary. QDA relaxes this assumption and allows each class to have its own covariance structure, producing a more flexible quadratic boundary.
 
 ```{python}
 #| echo: false
@@ -85,7 +73,9 @@ df.rename(columns={"Unnamed: 0": "Category"}, inplace=True)
 print(df.round(3).to_markdown(index=False))
 ```
 
-### Results from fitting a quadratic discriminant analysis
+*Table 2. LDA classification report on the held-out test set.*
+
+### Results from Fitting a Quadratic Discriminant Analysis
 
 ```{python}
 #| echo: false
@@ -95,37 +85,44 @@ df.rename(columns={"Unnamed: 0": "Category"}, inplace=True)
 print(df.round(3).to_markdown(index=False))
 ```
 
-You should comment on these results. You may wish to add an interpretation of the coefficients of these classifiers.  Or there may be other metrics (confusion matrix) that you think should be presented.
+*Table 3. QDA classification report on the held-out test set.*
 
+On the held-out test set, LDA achieves an overall accuracy of 0.74 with relatively balanced performance across the two classes. For pre-1930 properties, it achieves precision of 0.75, recall of 0.79 and F1-score of 0.77. For post-1930 properties, it achieves precision of 0.73, recall of 0.68 and F1-score of 0.70. This suggests that LDA captures a useful relationship between the energy metrics and house age band, although the overlap between the two groups prevents near-perfect classification.
 
-## ROC curve (and AUC) for two simple classifiers
+QDA performs worse overall, with accuracy of 0.62 and a lower macro-F1 score. Its class-level behaviour is also less balanced: it identifies many post-1930 properties correctly, with recall of 0.89, but only identifies 39% of pre-1930 properties. This means QDA over-predicts the post-1930 class and misses many older properties, which would be problematic in a retrofit-screening context where identifying older housing stock is important.
 
-We can of course examine the AUC for these classifiers.
+The most likely reason is that QDA's more flexible decision boundary is over-sensitive to covariance differences, skewed cost variables, and outliers in the EPC data. By contrast, LDA's shared-covariance assumption acts as a useful regulariser. For this problem, LDA is therefore the preferable baseline model because it provides stronger overall accuracy, better macro-F1 and more balanced class-level performance.
 
+## ROC Curve and AUC for the Two Classifiers
+
+We can also examine the area under the ROC curve for the two classifiers.
 
 ![](../../data_cache/vignettes/supervised_classification/roc.html){width="100%" height="600px"}
 
+*Figure 2. ROC curves and AUC for the LDA and QDA classifiers.*
 
-You should comment on the performance of the classifier.
+The ROC curves summarise the trade-off between true-positive and false-positive rates across all possible thresholds. LDA attains an AUC of 0.81 and QDA an AUC of 0.79, showing that both models discriminate better than chance. However, LDA is preferable because it combines the stronger AUC with better accuracy, macro-F1 and more balanced class-level performance. QDA's relatively high AUC but weaker classification report suggests that its ranking ability is reasonable, but the default decision threshold leads to poorer and more imbalanced hard classifications.
 
-##  Additional credit
+An AUC in the region of 0.8 indicates moderate but useful discrimination. This is clearly better than chance, but still well short of the near-perfect separation that would justify replacing property inspection or administrative records. The classifier is therefore best interpreted as a triage tool rather than as a final decision system.
 
-For additional credit you should consider extended the pipeline and trying out other classifiers.
+## Limitations
 
+Several limitations temper these results. EPCs are a self-selecting, non-random sample of dwellings, typically generated at sale, letting or retrofit, so the model is calibrated on inspected properties and may not generalise to the wider housing stock. The classifier is also fitted within a single local authority, so transfer to areas with different building traditions, climates or housing compositions is untested.
 
-## Record of AI use for MTHM503 supervised coursework
+The 1930 cut-point is a coarse binary proxy for a continuous construction history, and the energy metrics are themselves estimated rather than directly measured. Both issues introduce label and feature noise. Retrofitting also blurs the distinction between the two groups: older homes may have been upgraded, while newer homes may still perform poorly. These factors cap the attainable accuracy regardless of the classifier used.
 
-Instructions: You can use this document to record when, how and why you used GenAI to complete your assessment. It will help you create a record of AI use to submit alongside your references for AI-integrated and AI-assisted assignments. It may also be useful to help you discuss your AI use if you are required to do so in an academic conduct meeting.
+## Extension
 
-| **Date**       | **AI tool used** | **Purpose**                                | **Prompt**                                 | **Hyperlink to output (where possible)** | **Section of work used for** |
-|----------------|------------------|--------------------------------------------|--------------------------------------------|------------------------------------------|-------------------------------|
-| E.g. 15/07/2025| MS Copilot       | To help create an organised essay structure| ‘Generate ideas for structuring an essay on...’ | [insert link]                          | introduction                  |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
-|                |                  |                                            |                                            |                                          |                               |
+A natural extension would be to compare LDA and QDA with a further classifier such as logistic regression, decision trees or random forests. A tree-based model may capture non-linear interactions between energy efficiency, heating cost and CO2 emissions more flexibly than discriminant analysis. However, any more complex model should be evaluated using the same held-out test set and should be compared using both threshold-dependent metrics, such as accuracy and F1-score, and threshold-independent metrics, such as AUC. This is important because a model with high AUC may still perform poorly at the default classification threshold if the two classes are imbalanced or if the probability calibration is weak.
 
+Further extensions could also include adding a confusion matrix, reporting sensitivity to the classification threshold, and examining feature importance or coefficients to understand which energy metrics contribute most strongly to separating pre-1930 from post-1930 properties.
+
+## Conclusion
+
+The results show that EPC energy metrics contain meaningful but imperfect information about house age band. LDA provides the strongest baseline classifier, with approximately 74% accuracy and an AUC of 0.81. This is not accurate enough to drive individual retrofit decisions automatically, but it is credible as a screening tool. In practice, the model could help a local authority flag likely pre-1930 properties for prioritised review, reducing the number of site visits required. Used as a triage filter with human or administrative confirmation, rather than as an automated decision system, it offers practical value while keeping the consequences of misclassification manageable.
+
+## Record of AI Use for MTHM503 Supervised Coursework
+
+| **Date**   | **AI tool used** | **Purpose**                                                                                                                             | **Prompt**                                                                                  | **Hyperlink to output where possible** | **Section of work used for**                |
+| ---------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------- | ------------------------------------------- |
+| 17/06/2026 | Claude / ChatGPT | Strict review of report quality and support drafting interpretation, limitations and conclusion wording, checked against my own outputs | "Review my MTHM503 supervised report and suggest interpretation and limitations paragraphs" | n/a                                    | Data, Results, ROC, Limitations, Conclusion |
